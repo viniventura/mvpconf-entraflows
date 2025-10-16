@@ -97,3 +97,8 @@ ehthumbs.db
 *.tmp
 *.bak
 *.code-workspace
+
+# ----------------------
+# GUTHUB COPILOT
+# ----------------------
+.github/
