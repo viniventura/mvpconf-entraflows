@@ -23,7 +23,14 @@ export const ListView = (props) => {
         scopes: protectedResources.toDoListAPI.scopes.write
     });
 
-    const [tasks, setTasks] = useState(props.toDoListData);
+    const [tasks, setTasks] = useState(props.toDoListData || []);
+
+    // Update tasks when props.toDoListData changes
+    useEffect(() => {
+        if (props.toDoListData && Array.isArray(props.toDoListData)) {
+            setTasks(props.toDoListData);
+        }
+    }, [props.toDoListData]);
 
     const handleAddTask = (description) => {
         const newTask = {
@@ -32,7 +39,7 @@ export const ListView = (props) => {
 
         execute('POST', protectedResources.toDoListAPI.endpoint, newTask).then((response) => {
             if (response) {
-                setTasks([...tasks, response]);
+                setTasks(Array.isArray(tasks) ? [...tasks, response] : [response]);
             }
         });
     };
@@ -40,14 +47,18 @@ export const ListView = (props) => {
     const handleDeleteTask = (id) => {
         execute("DELETE", protectedResources.toDoListAPI.endpoint + `/${id}`).then((response) => {
             if (response.status === 200 || response.status === 204) {
-                const remainingTasks = tasks.filter(task => id !== task.id);
+                const remainingTasks = Array.isArray(tasks) ? tasks.filter(task => id !== task.id) : [];
                 setTasks(remainingTasks);
             }
         });
     }
 
     const handleEditTask = (id, description) => {
+        if (!Array.isArray(tasks)) return;
+        
         const updatedTask = tasks.find((task) => id === task.id);
+        if (!updatedTask) return;
+        
         updatedTask.description = description;
 
         execute('PUT', protectedResources.toDoListAPI.endpoint + `/${id}`, updatedTask).then((response) => {
@@ -61,7 +72,7 @@ export const ListView = (props) => {
         });
     };
 
-    const taskList = tasks.map((task) => {
+    const taskList = Array.isArray(tasks) ? tasks.map((task) => {
         return <ToDoItem
             id={task.id}
             description={task.description}
@@ -69,7 +80,7 @@ export const ListView = (props) => {
             deleteTask={handleDeleteTask}
             editTask={handleEditTask}
         />
-    });
+    }) : [];
 
     const listHeadingRef = useRef(null);
     const prevTaskLength = usePrevious(tasks.length);
