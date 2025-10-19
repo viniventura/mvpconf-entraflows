@@ -28,6 +28,12 @@ build/
 .angular/
 .vuepress/dist
 .serverless/
+
+# ----------------------
+# CONFIGURATION / SECRETS
+# ----------------------
+.env.local
+
 .fusebox/
 .dynamodb/
 .tern-port
