@@ -12,8 +12,8 @@ import { LogLevel } from "@azure/msal-browser";
  */
 export const msalConfig = {
     auth: {
-        clientId: 'Enter_the_Application_Id_Here', // This is the ONLY mandatory field that you need to supply.
-        authority: 'https://Enter_the_Tenant_Subdomain_Here.ciamlogin.com/', // Replace the placeholder with your tenant subdomain
+        clientId: process.env.REACT_APP_CLIENT_ID || 'Enter_the_Application_Id_Here', // This is the ONLY mandatory field that you need to supply.
+        authority: `https://login.microsoftonline.com/${process.env.REACT_APP_TENANT_SUBDOMAIN || 'Enter_the_Tenant_Subdomain_Here'}.onmicrosoft.com/`, // Replace the placeholder with your tenant subdomain
         redirectUri: '/', // You must register this URI on Microsoft Entra admin center/App Registration. Defaults to window.location.origin
         postLogoutRedirectUri: '/', // Indicates the page to navigate after logout.
     },
@@ -60,8 +60,8 @@ export const protectedResources = {
     toDoListAPI: {
         endpoint: 'https://localhost:44351/api/todolist',
         scopes: {
-            read: ['api://Enter_the_Web_Api_Application_Id_Here/ToDoList.Read'],
-            write: ['api://Enter_the_Web_Api_Application_Id_Here/ToDoList.ReadWrite'],
+            read: [`api://${process.env.REACT_APP_API_CLIENT_ID || 'Enter_the_Web_Api_Application_Id_Here'}/ToDoList.Read`],
+            write: [`api://${process.env.REACT_APP_API_CLIENT_ID || 'Enter_the_Web_Api_Application_Id_Here'}/ToDoList.ReadWrite`],
         },
     },
 };
