@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -5,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Identity.Web;
+using Microsoft.OpenApi.Models;
 
 using ToDoListAPI.Context;
 
@@ -60,6 +63,57 @@ builder.Services.AddCors(o => o.AddPolicy("default", builder =>
            .AllowAnyHeader();
 }));
 
+// Configure Swagger with OAuth2 Authorization Code Flow
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "ToDoList API",
+        Version = "v1",
+        Description = "An API to manage ToDo items with Azure AD authentication"
+    });
+
+    var tenantId = builder.Configuration["AzureAd:TenantId"];
+    var instance = builder.Configuration["AzureAd:Instance"];
+    var authorizationUrl = $"{instance}{tenantId}/oauth2/v2.0/authorize";
+    var tokenUrl = $"{instance}{tenantId}/oauth2/v2.0/token";
+
+    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.OAuth2,
+        Flows = new OpenApiOAuthFlows
+        {
+            AuthorizationCode = new OpenApiOAuthFlow
+            {
+                AuthorizationUrl = new Uri(authorizationUrl),
+                TokenUrl = new Uri(tokenUrl),
+                Scopes = new Dictionary<string, string>
+                {
+                    { $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.Read", "Read access to ToDo items" },
+                    { $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.ReadWrite", "Read and write access to ToDo items" }
+                }
+            }
+        }
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "oauth2"
+                }
+            },
+            new[] { $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.Read", 
+                    $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.ReadWrite" }
+        }
+    });
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -69,6 +123,16 @@ if (app.Environment.IsDevelopment())
     // For debugging/development purposes, one can enable additional detail in exceptions by setting IdentityModelEventSource.ShowPII to true.
     // Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
     app.UseDeveloperExceptionPage();
+    
+    // Enable Swagger in development
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "ToDoList API V1");
+        options.OAuthClientId(builder.Configuration["Swagger:ClientId"]);
+        options.OAuthUsePkce();
+        options.OAuthScopes(builder.Configuration["Swagger:Scopes"]?.Split(' ') ?? Array.Empty<string>());
+    });
 }
 else
 {
