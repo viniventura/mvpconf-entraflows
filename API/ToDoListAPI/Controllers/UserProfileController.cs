@@ -44,26 +44,41 @@ public class UserProfileController : ControllerBase
     /// <returns>User profile from Microsoft Graph</returns>
     [HttpGet("me")]
     [RequiredScopeOrAppPermission(
-        RequiredScopesConfigurationKey = "AzureAd:Scopes:Read"
+        RequiredScopesConfigurationKey = "AzureAd:Scopes:User:Read"
     )]
     public async Task<IActionResult> GetUserProfile()
     {
-        var response = await _downstreamApi.CallApiForUserAsync("GraphApi",
-            options =>
-            {
-                options.RelativePath = "me";
-            }).ConfigureAwait(false);
+        try
+        {
+            // Call Microsoft Graph API on behalf of the user
+            // BaseUrl: https://graph.microsoft.com/v1.0
+            // RelativePath: me
+            // Full URL: https://graph.microsoft.com/v1.0/me
+            var response = await _downstreamApi.CallApiForUserAsync("GraphApi", 
+                options =>
+                {
+                    options.RelativePath = "me";
+                }).ConfigureAwait(false);
 
-        if (!response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
+            {
+                return Problem(
+                    detail: $"Graph API call failed with status code: {response.StatusCode}",
+                    statusCode: (int)response.StatusCode,
+                    title: "Failed to retrieve user profile");
+            }
+
+            var userProfile = await response.Content.ReadFromJsonAsync<JsonDocument>().ConfigureAwait(false);
+
+            return Ok(userProfile);
+        }
+        catch (Exception ex)
         {
             return Problem(
-                detail: $"Graph API call failed with status code: {response.StatusCode}",
-                statusCode: (int)response.StatusCode,
-                title: "Failed to retrieve user profile");
+                detail: ex.Message,
+                title: "Error calling Microsoft Graph API",
+                statusCode: 500);
         }
-
-        var userProfile = await response.Content.ReadFromJsonAsync<JsonDocument>().ConfigureAwait(false);
-        return Ok(userProfile);
     }
 }
 

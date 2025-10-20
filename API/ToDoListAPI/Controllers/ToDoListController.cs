@@ -83,8 +83,8 @@ public class ToDoListController : ControllerBase
 
     [HttpGet]
     [RequiredScopeOrAppPermission(
-        RequiredScopesConfigurationKey = "AzureAD:Scopes:Read",
-        RequiredAppPermissionsConfigurationKey = "AzureAD:AppPermissions:Read"
+        RequiredScopesConfigurationKey = "AzureAd:Scopes:ToDoList:Read",
+        RequiredAppPermissionsConfigurationKey = "AzureAd:AppPermissions:ToDoList:Read"
     )]
     public async Task<IActionResult> GetAsync()
     {
@@ -97,8 +97,8 @@ public class ToDoListController : ControllerBase
 
     [HttpGet("{id}")]
     [RequiredScopeOrAppPermission(
-        RequiredScopesConfigurationKey = "AzureAD:Scopes:Read",
-        RequiredAppPermissionsConfigurationKey = "AzureAD:AppPermissions:Read"
+        RequiredScopesConfigurationKey = "AzureAd:Scopes:ToDoList:Read",
+        RequiredAppPermissionsConfigurationKey = "AzureAd:AppPermissions:ToDoList:Read"
     )]
     public async Task<IActionResult> GetAsync(int id)
     {
@@ -115,8 +115,8 @@ public class ToDoListController : ControllerBase
 
     [HttpPut("{id}")]
     [RequiredScopeOrAppPermission(
-        RequiredScopesConfigurationKey = "AzureAD:Scopes:Write",
-        RequiredAppPermissionsConfigurationKey = "AzureAD:AppPermissions:Write"
+        RequiredScopesConfigurationKey = "AzureAd:Scopes:ToDoList:Write",
+        RequiredAppPermissionsConfigurationKey = "AzureAd:AppPermissions:ToDoList:Write"
     )]
     public async Task<IActionResult> PutAsync(int id, [FromBody] ToDo toDo)
     {
@@ -138,8 +138,8 @@ public class ToDoListController : ControllerBase
 
     [HttpPost]
     [RequiredScopeOrAppPermission(
-        RequiredScopesConfigurationKey = "AzureAD:Scopes:Write",
-        RequiredAppPermissionsConfigurationKey = "AzureAD:AppPermissions:Write"
+        RequiredScopesConfigurationKey = "AzureAd:Scopes:ToDoList:Write",
+        RequiredAppPermissionsConfigurationKey = "AzureAd:AppPermissions:ToDoList:Write"
     )]
     public async Task<IActionResult> PostAsync([FromBody] ToDo toDo)
     {
@@ -160,8 +160,8 @@ public class ToDoListController : ControllerBase
 
     [HttpDelete("{id}")]
     [RequiredScopeOrAppPermission(
-        RequiredScopesConfigurationKey = "AzureAD:Scopes:Write",
-        RequiredAppPermissionsConfigurationKey = "AzureAD:AppPermissions:Write"
+        RequiredScopesConfigurationKey = "AzureAd:Scopes:ToDoList:Write",
+        RequiredAppPermissionsConfigurationKey = "AzureAd:AppPermissions:ToDoList:Write"
     )]
     public async Task<IActionResult> DeleteAsync(int id)
     {

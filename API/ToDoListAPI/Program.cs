@@ -60,13 +60,6 @@ if (builder.Configuration.GetSection("DownstreamApis:GraphApi").Exists())
         builder.Configuration.GetSection("DownstreamApis:GraphApi"));
 }
 
-// You can add more downstream APIs here
-// Example: Your own custom API-B
-if (builder.Configuration.GetSection("DownstreamApis:CustomApi").Exists())
-{
-    builder.Services.AddDownstreamApi("CustomApi", 
-        builder.Configuration.GetSection("DownstreamApis:CustomApi"));
-}
 
 builder.Services.AddDbContext<ToDoContext>(options =>
 {
@@ -86,6 +79,12 @@ builder.Services.AddCors(o => o.AddPolicy("default", builder =>
 
 // Configure Swagger with OAuth2 Authorization Code Flow
 builder.Services.AddEndpointsApiExplorer();
+
+// Get scopes from configuration (declare before AddSwaggerGen to use in SwaggerUI later)
+var todoListReadScope = builder.Configuration["Swagger:Scopes:ToDoList:Read"];
+var todoListReadWriteScope = builder.Configuration["Swagger:Scopes:ToDoList:ReadWrite"];
+var userReadScope = builder.Configuration["Swagger:Scopes:User:Read"];
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -111,8 +110,9 @@ builder.Services.AddSwaggerGen(options =>
                 TokenUrl = new Uri(tokenUrl),
                 Scopes = new Dictionary<string, string>
                 {
-                    { $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.Read", "Read access to ToDo items" },
-                    { $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.ReadWrite", "Read and write access to ToDo items" }
+                    { todoListReadScope ?? $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.Read", "Read access to ToDo items" },
+                    { todoListReadWriteScope ?? $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.ReadWrite", "Read and write access to ToDo items" },
+                    { userReadScope ?? $"api://{builder.Configuration["AzureAd:ClientId"]}/User.Read", "Read user profile from Microsoft Graph" }
                 }
             }
         }
@@ -129,8 +129,11 @@ builder.Services.AddSwaggerGen(options =>
                     Id = "oauth2"
                 }
             },
-            new[] { $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.Read", 
-                    $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.ReadWrite" }
+            new[] { 
+                todoListReadScope ?? $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.Read", 
+                todoListReadWriteScope ?? $"api://{builder.Configuration["AzureAd:ClientId"]}/ToDoList.ReadWrite",
+                userReadScope ?? $"api://{builder.Configuration["AzureAd:ClientId"]}/User.Read"
+            }
         }
     });
 });
@@ -152,7 +155,14 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "ToDoList API V1");
         options.OAuthClientId(builder.Configuration["Swagger:ClientId"]);
         options.OAuthUsePkce();
-        options.OAuthScopes(builder.Configuration["Swagger:Scopes"]?.Split(' ') ?? Array.Empty<string>());
+        
+        // Configure default scopes for Swagger UI
+        var defaultScopes = new List<string>();
+        if (!string.IsNullOrEmpty(todoListReadScope)) defaultScopes.Add(todoListReadScope);
+        if (!string.IsNullOrEmpty(todoListReadWriteScope)) defaultScopes.Add(todoListReadWriteScope);
+        if (!string.IsNullOrEmpty(userReadScope)) defaultScopes.Add(userReadScope);
+        
+        options.OAuthScopes(defaultScopes.ToArray());
     });
 }
 else
