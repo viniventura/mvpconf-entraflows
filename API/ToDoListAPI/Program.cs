@@ -15,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpContextAccessor();
 
+// Configure Authentication with OBO support for calling downstream APIs
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddMicrosoftIdentityWebApi(options =>
             {
@@ -44,8 +45,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 //        throw new System.Exception("This client is not authorized");
                 //    }
                 //};
-            }, options => { builder.Configuration.Bind("AzureAd", options); });
+            }, options => { builder.Configuration.Bind("AzureAd", options); })
+            .EnableTokenAcquisitionToCallDownstreamApi(options =>
+            {
+                builder.Configuration.Bind("AzureAd", options);
+            })
+            .AddInMemoryTokenCaches();
 
+// Register Downstream APIs (example: Graph API or your own protected API)
+// The downstream API can be Microsoft Graph or any other API protected by Azure AD
+if (builder.Configuration.GetSection("DownstreamApis:GraphApi").Exists())
+{
+    builder.Services.AddDownstreamApi("GraphApi", 
+        builder.Configuration.GetSection("DownstreamApis:GraphApi"));
+}
+
+// You can add more downstream APIs here
+// Example: Your own custom API-B
+if (builder.Configuration.GetSection("DownstreamApis:CustomApi").Exists())
+{
+    builder.Services.AddDownstreamApi("CustomApi", 
+        builder.Configuration.GetSection("DownstreamApis:CustomApi"));
+}
 
 builder.Services.AddDbContext<ToDoContext>(options =>
 {
@@ -71,7 +92,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "ToDoList API",
         Version = "v1",
-        Description = "An API to manage ToDo items with Azure AD authentication"
+        Description = "An API to manage ToDo items with Azure AD authentication and OBO support for downstream APIs"
     });
 
     var tenantId = builder.Configuration["AzureAd:TenantId"];
