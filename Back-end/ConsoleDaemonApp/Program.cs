@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Identity.Client;
@@ -14,10 +15,11 @@ class Program
 
     static async Task Main(string[] args)
     {
-        // Load configuration
+        // Load configuration from appsettings.json, appsettings.local.json and User Secrets
         _configuration = new ConfigurationBuilder()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true)
             .Build();
 
         _httpClient = new HttpClient();

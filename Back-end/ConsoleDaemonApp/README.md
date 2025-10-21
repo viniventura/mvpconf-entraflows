@@ -75,7 +75,50 @@ This is a .NET 8 console application that demonstrates the **Client Credentials 
 
 ## ?? Configuration
 
-### Update `appsettings.json`
+### Option 1: Using User Secrets (Recommended for Development)
+
+User Secrets is the safest way to store sensitive configuration during development as it keeps secrets outside your project directory.
+
+#### Initialize User Secrets
+
+```bash
+cd ConsoleDaemonApp
+dotnet user-secrets init
+```
+
+#### Add Your Credentials
+
+```bash
+dotnet user-secrets set "AzureAd:ClientId" "YOUR_DAEMON_APP_CLIENT_ID"
+dotnet user-secrets set "AzureAd:ClientSecret" "YOUR_CLIENT_SECRET"
+dotnet user-secrets set "AzureAd:TenantId" "YOUR_TENANT_ID"
+```
+
+#### List All Secrets
+
+```bash
+dotnet user-secrets list
+```
+
+#### Remove a Secret
+
+```bash
+dotenv user-secrets remove "AzureAd:ClientSecret"
+```
+
+#### Clear All Secrets
+
+```bash
+dotnet user-secrets clear
+```
+
+**Note**: User Secrets are stored at:
+- **Windows**: `%APPDATA%\Microsoft\UserSecrets\<user_secrets_id>\secrets.json`
+- **Linux/macOS**: `~/.microsoft/usersecrets/<user_secrets_id>/secrets.json`
+
+### Option 2: Using `appsettings.local.json` (Alternative)
+
+Create a file named `appsettings.local.json` in the project root:
 
 ```json
 {
@@ -92,6 +135,16 @@ This is a .NET 8 console application that demonstrates the **Client Credentials 
 }
 ```
 
+**?? IMPORTANT**: This file is already in `.gitignore` and will NOT be committed to Git.
+
+### Option 3: Update `appsettings.json` (Not Recommended)
+
+Only use this for testing. Never commit secrets to source control.
+
+```json
+// ...existing appsettings.json content...
+```
+
 **Replace:**
 - `YOUR_TENANT_ID`: From Azure Portal
 - `YOUR_DAEMON_APP_CLIENT_ID`: From Step 1
@@ -101,6 +154,16 @@ This is a .NET 8 console application that demonstrates the **Client Credentials 
 **Scope Format:**
 - Use `api://TODOLIST_API_CLIENT_ID/.default` for application permissions
 - The `.default` scope requests all app permissions granted to the app
+
+### Configuration Loading Order
+
+The application loads configuration in this order (later sources override earlier ones):
+
+1. `appsettings.json` (base configuration with placeholders)
+2. `appsettings.local.json` (optional, local overrides)
+3. User Secrets (optional, development secrets)
+
+This means User Secrets will override values from both JSON files.
 
 ---
 
