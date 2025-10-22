@@ -1,9 +1,9 @@
-# Setup R·pido - OIDC com Microsoft Entra ID (5 minutos)
+# Setup R√°pido - OIDC com Microsoft Entra ID (5 minutos)
 
-## OpÁ„o Recomendada: OIDC ao invÈs de SAML
+## Op√ß√£o Recomendada: OIDC ao inv√©s de SAML
 
-**Por quÍ?**
-- Funciona no Grafana OSS (gratuito - sem necessidade de licenÁa Enterprise)
+**Por qu√™?**
+- Funciona no Grafana OSS (gratuito - sem necessidade de licen√ßa Enterprise)
 - Mais simples que SAML
 - Protocolo mais moderno (OpenID Connect)
 - Setup em 5 minutos
@@ -21,7 +21,7 @@ https://portal.azure.com
 -> + New registration
 ```
 
-### 1.2. Configurar a AplicaÁ„o
+### 1.2. Configurar a Aplica√ß√£o
 
 **Name**: `Grafana SSO Hands-on`
 
@@ -48,21 +48,21 @@ App registration -> Certificates & secrets -> Client secrets tab
 ### 2.2. Configurar Secret
 
 **Description**: `grafana-local`
-**Expires**: 3 months (ou conforme sua polÌtica de seguranÁa)
+**Expires**: 3 months (ou conforme sua pol√≠tica de seguran√ßa)
 
 Click **Add**
 
 ### 2.3. COPIAR O VALUE IMEDIATAMENTE
 
-**IMPORTANTE**: O valor do secret sÛ aparece **uma vez**!
+**IMPORTANTE**: O valor do secret s√≥ aparece **uma vez**!
 
-Copie o campo **Value** (n„o o "Secret ID")
+Copie o campo **Value** (n√£o o "Secret ID")
 
 ---
 
 ## Passo 3: Copiar IDs
 
-Na p·gina **Overview** do App Registration, copie:
+Na p√°gina **Overview** do App Registration, copie:
 
 1. **Application (client) ID** (formato GUID)
 2. **Directory (tenant) ID** (formato GUID)
@@ -95,7 +95,7 @@ TENANT_ID=paste-your-tenant-id-here
 
 **Salve o arquivo!**
 
-**IMPORTANTE:** N„o compartilhe estes valores! Eles s„o credenciais sensÌveis.
+**IMPORTANTE:** N√£o compartilhe estes valores! Eles s√£o credenciais sens√≠veis.
 
 ---
 
@@ -135,16 +135,16 @@ Abra o navegador em: **http://localhost:3001**
 
 ### 6.2. Login via SSO
 
-VocÍ ver· **dois mÈtodos de login**:
+Voc√™ ver√° **dois m√©todos de login**:
 
 1. **"Sign in with Microsoft Entra"** <- Use este!
 2. Username/Password (login local - fallback)
 
 ### 6.3. Clicar em "Sign in with Microsoft Entra"
 
-- VocÍ ser· redirecionado para `login.microsoftonline.com`
-- FaÁa login com sua conta Microsoft do tenant
-- ApÛs autenticaÁ„o, ser· redirecionado de volta ao Grafana
+- Voc√™ ser√° redirecionado para `login.microsoftonline.com`
+- Fa√ßa login com sua conta Microsoft do tenant
+- Ap√≥s autentica√ß√£o, ser√° redirecionado de volta ao Grafana
 - **Login bem-sucedido!**
 
 ---
@@ -155,7 +155,7 @@ VocÍ ver· **dois mÈtodos de login**:
 
 **Causa**: Client Secret incorreto ou expirado
 
-**SoluÁ„o**:
+**Solu√ß√£o**:
 1. Volte ao Azure Portal
 2. App registration -> Certificates & secrets
 3. Crie um novo Client Secret
@@ -166,30 +166,30 @@ VocÍ ver· **dois mÈtodos de login**:
 
 ### Problema 2: "redirect_uri_mismatch"
 
-**Causa**: Redirect URI n„o corresponde
+**Causa**: Redirect URI n√£o corresponde
 
-**SoluÁ„o**:
+**Solu√ß√£o**:
 1. Azure Portal -> App registration -> Authentication
 2. Verifique se tem **exatamente**: `http://localhost:3001/login/generic_oauth`
-3. N„o adicione `/` no final
-4. Protocolo deve ser `http` (n„o `https`) para local
+3. N√£o adicione `/` no final
+4. Protocolo deve ser `http` (n√£o `https`) para local
 
 ---
 
-### Problema 3: Bot„o SSO n„o aparece
+### Problema 3: Bot√£o SSO n√£o aparece
 
-**Verificar configuraÁ„o:**
+**Verificar configura√ß√£o:**
 ```bash
-# Ver vari·veis OAuth
+# Ver vari√°veis OAuth
 docker-compose exec grafana env | grep OAUTH
 
 # Ver logs OAuth
 docker-compose logs grafana | grep -i oauth
 ```
 
-**SoluÁıes**:
-1. Verifique se o `.env` est· no diretÛrio correto
-2. Verifique se as vari·veis est„o preenchidas (n„o vazias)
+**Solu√ß√µes**:
+1. Verifique se o `.env` est√° no diret√≥rio correto
+2. Verifique se as vari√°veis est√£o preenchidas (n√£o vazias)
 3. Reinicie com `--force-recreate`:
    ```bash
    docker-compose up -d --force-recreate
@@ -199,17 +199,17 @@ docker-compose logs grafana | grep -i oauth
 
 ### Problema 4: "AADSTS50105: User is not assigned"
 
-**Causa**: Usu·rio n„o est· atribuÌdo ao App Registration
+**Causa**: Usu√°rio n√£o est√° atribu√≠do ao App Registration
 
-**SoluÁ„o**:
+**Solu√ß√£o**:
 1. Azure Portal -> Enterprise applications
 2. Procure por "Grafana SSO Hands-on"
-3. V· em **Users and groups**
+3. V√° em **Users and groups**
 4. Click **+ Add user/group**
-5. Selecione seu usu·rio
+5. Selecione seu usu√°rio
 6. Click **Assign**
 
-**OU** desabilite a exigÍncia de atribuiÁ„o:
+**OU** desabilite a exig√™ncia de atribui√ß√£o:
 1. Enterprise applications -> "Grafana SSO Hands-on"
 2. **Properties**
 3. **Assignment required?** -> **No**
@@ -217,7 +217,7 @@ docker-compose logs grafana | grep -i oauth
 
 ---
 
-## Comandos ⁄teis
+## Comandos √öteis
 
 ```bash
 # Parar
@@ -250,26 +250,26 @@ Antes do hands-on, verifique:
 - [ ] Client Secret criado e VALUE copiado
 - [ ] Arquivo `.env` criado e preenchido com valores reais
 - [ ] Container do Grafana rodando (`docker ps`)
-- [ ] Bot„o "Sign in with Microsoft Entra" visÌvel em http://localhost:3001
+- [ ] Bot√£o "Sign in with Microsoft Entra" vis√≠vel em http://localhost:3001
 - [ ] Teste de login via SSO realizado com sucesso
 
 ---
 
 ## Pronto!
 
-Se todos os itens do checklist est„o OK, seu SSO via OIDC est· funcionando!
+Se todos os itens do checklist est√£o OK, seu SSO via OIDC est√° funcionando!
 
 **Vantagens do OIDC sobre SAML:**
-- [x] Funciona no Grafana OSS (sem licenÁa)
-- [x] Setup mais r·pido (5 min vs 15 min)
-- [x] Debugging mais f·cil (JSON vs XML)
+- [x] Funciona no Grafana OSS (sem licen√ßa)
+- [x] Setup mais r√°pido (5 min vs 15 min)
+- [x] Debugging mais f√°cil (JSON vs XML)
 - [x] Protocolo mais moderno e seguro
 - [x] Melhor suporte a mobile/SPA
 
 ---
 
-**PrÛximos passos:**
+**Pr√≥ximos passos:**
 - Configurar role mapping (Admin, Editor, Viewer)
-- Adicionar MFA (j· suportado pelo Entra ID)
+- Adicionar MFA (j√° suportado pelo Entra ID)
 - Configurar Conditional Access policies
-- Deploy em produÁ„o com HTTPS
+- Deploy em produ√ß√£o com HTTPS

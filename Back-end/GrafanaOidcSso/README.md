@@ -2,18 +2,18 @@
 
 Este projeto demonstra como configurar **Single Sign-On (SSO) via OIDC** entre Grafana e Microsoft Entra External ID.
 
-## Solução: OIDC (OpenID Connect)
+## SoluÃ§Ã£o: OIDC (OpenID Connect)
 
 **Por que OIDC?**
 - [x] Funciona no Grafana OSS (gratuito)
 - [x] Mais simples que SAML
 - [x] Protocolo moderno (JSON vs XML)
 - [x] Setup em 5 minutos
-- [x] Suporta autorização via App Roles
+- [x] Suporta autorizaÃ§Ã£o via App Roles
 
 ---
 
-## Pré-requisitos
+## PrÃ©-requisitos
 
 1. **Docker & Docker Compose** instalados
 2. **Tenant do Microsoft Entra ID** (External ID ou regular)
@@ -21,7 +21,7 @@ Este projeto demonstra como configurar **Single Sign-On (SSO) via OIDC** entre G
 
 ---
 
-## Setup Rápido (5 minutos)
+## Setup RÃ¡pido (5 minutos)
 
 ### 1. Criar App Registration no Azure
 
@@ -29,7 +29,7 @@ Este projeto demonstra como configurar **Single Sign-On (SSO) via OIDC** entre G
 Azure Portal -> Microsoft Entra ID -> App registrations -> + New registration
 ```
 
-**Configuração:**
+**ConfiguraÃ§Ã£o:**
 - **Name**: `Grafana SSO`
 - **Redirect URI**: 
   - Platform: **Web**
@@ -41,16 +41,16 @@ Azure Portal -> Microsoft Entra ID -> App registrations -> + New registration
 App registration -> Certificates & secrets -> + New client secret
 ```
 
-**IMPORTANTE: Copie o VALUE imediatamente** (só aparece uma vez!)
+**IMPORTANTE: Copie o VALUE imediatamente** (sÃ³ aparece uma vez!)
 
-### 3. Copiar IDs necessários
+### 3. Copiar IDs necessÃ¡rios
 
-Na página **Overview** do App Registration, copie:
+Na pÃ¡gina **Overview** do App Registration, copie:
 
 1. **Application (client) ID**
 2. **Directory (tenant) ID**
 
-### 4. Configurar App Roles (Autorização)
+### 4. Configurar App Roles (AutorizaÃ§Ã£o)
 
 ```
 App registration -> App roles -> + Create app role
@@ -82,13 +82,13 @@ Description: Read-only access to dashboards and data. Can view all dashboards bu
 Allowed member types: Users/Groups
 ```
 
-### 5. Atribuir Usuários
+### 5. Atribuir UsuÃ¡rios
 
 ```
 Azure Portal -> Enterprise applications -> [Seu App] -> Users and groups -> + Add user/group
 ```
 
-Para cada usuário, selecione uma role: Admin, Editor ou Viewer.
+Para cada usuÃ¡rio, selecione uma role: Admin, Editor ou Viewer.
 
 ### 6. Configurar Token (incluir roles)
 
@@ -133,47 +133,47 @@ docker-compose up -d
 
 1. Acesse: **http://localhost:3001**
 2. Clique em **"Sign in with Microsoft Entra"**
-3. Faça login com sua conta Microsoft
+3. FaÃ§a login com sua conta Microsoft
 4. **SSO funcionando!**
 
 ---
 
-## Autorização (Roles)
+## AutorizaÃ§Ã£o (Roles)
 
 O Grafana tem 3 roles principais:
 
-| Role | Permissões |
+| Role | PermissÃµes |
 |------|-----------|
-| **Admin** | Acesso total: gerenciar usuários, data sources, dashboards, configurações |
+| **Admin** | Acesso total: gerenciar usuÃ¡rios, data sources, dashboards, configuraÃ§Ãµes |
 | **Editor** | Criar/editar dashboards, queries e alertas |
-| **Viewer** | Visualização apenas (read-only) |
+| **Viewer** | VisualizaÃ§Ã£o apenas (read-only) |
 
-As roles são mapeadas automaticamente via App Roles do Azure AD.
+As roles sÃ£o mapeadas automaticamente via App Roles do Azure AD.
 
 ---
 
-## Segurança
+## SeguranÃ§a
 
 ### Arquivo .env
 
-- O arquivo `.env` contém **informações sensíveis**
+- O arquivo `.env` contÃ©m **informaÃ§Ãµes sensÃ­veis**
 - **NUNCA** commite o `.env` para o Git
-- O `.gitignore` já protege este arquivo
-- Para produção, use **Azure Key Vault** ou similar
+- O `.gitignore` jÃ¡ protege este arquivo
+- Para produÃ§Ã£o, use **Azure Key Vault** ou similar
 
-### Rotação de Secrets
+### RotaÃ§Ã£o de Secrets
 
-Client secrets expiram! Verifique a data de expiração no Azure Portal:
+Client secrets expiram! Verifique a data de expiraÃ§Ã£o no Azure Portal:
 
 ```
 App registration -> Certificates & secrets -> Client secrets
 ```
 
-Configure alertas de expiração e planeje a rotação.
+Configure alertas de expiraÃ§Ã£o e planeje a rotaÃ§Ã£o.
 
 ---
 
-## Comandos Úteis
+## Comandos Ãšteis
 
 ```bash
 # Ver logs
@@ -188,10 +188,10 @@ docker-compose down
 # Parar e remover dados
 docker-compose down -v
 
-# Verificar configuração (mostra valores do .env)
+# Verificar configuraÃ§Ã£o (mostra valores do .env)
 docker-compose config
 
-# Ver variáveis carregadas
+# Ver variÃ¡veis carregadas
 docker-compose config | grep OAUTH
 ```
 
@@ -199,44 +199,44 @@ docker-compose config | grep OAUTH
 
 ## Troubleshooting
 
-### Botão SSO não aparece
+### BotÃ£o SSO nÃ£o aparece
 
 ```bash
 # Verificar logs
 docker-compose logs grafana | grep -i oauth
 
-# Verificar se variáveis do .env foram carregadas
+# Verificar se variÃ¡veis do .env foram carregadas
 docker-compose exec grafana env | grep OAUTH
 ```
 
-**Solução:**
-- Certifique-se de que o arquivo `.env` está no mesmo diretório do `docker-compose.yml`
-- Verifique se não há espaços extras nas variáveis do `.env`
+**SoluÃ§Ã£o:**
+- Certifique-se de que o arquivo `.env` estÃ¡ no mesmo diretÃ³rio do `docker-compose.yml`
+- Verifique se nÃ£o hÃ¡ espaÃ§os extras nas variÃ¡veis do `.env`
 - Reinicie com `docker-compose down` e `docker-compose up -d`
 
 ### Erro "invalid_client"
 
-- Verifique se o Client Secret está correto
-- Certifique-se de copiar o **Value**, não o Secret ID
-- Verifique se o secret não expirou
+- Verifique se o Client Secret estÃ¡ correto
+- Certifique-se de copiar o **Value**, nÃ£o o Secret ID
+- Verifique se o secret nÃ£o expirou
 
 ### Erro "redirect_uri_mismatch"
 
 - Redirect URI no Azure deve ser **exatamente**: `http://localhost:3001/login/generic_oauth`
-- Não adicione `/` no final
-- Protocolo deve ser `http` para local (ou `https` para produção)
+- NÃ£o adicione `/` no final
+- Protocolo deve ser `http` para local (ou `https` para produÃ§Ã£o)
 
 ### Erro "invalid_request: AADSTS900144"
 
 - Tenant ID incorreto
 - Verifique o valor de `TENANT_ID` no `.env`
-- Copie novamente da página Overview do App Registration
+- Copie novamente da pÃ¡gina Overview do App Registration
 
 ### Role sempre Viewer
 
-- Verifique se App Roles estão configuradas
-- Verifique se usuário está atribuído a uma role
-- Verifique se claim `roles` está no token (use jwt.io para decodificar)
+- Verifique se App Roles estÃ£o configuradas
+- Verifique se usuÃ¡rio estÃ¡ atribuÃ­do a uma role
+- Verifique se claim `roles` estÃ¡ no token (use jwt.io para decodificar)
 
 ---
 
@@ -244,17 +244,17 @@ docker-compose exec grafana env | grep OAUTH
 
 ```
 GrafanaOidcSso/
-??? docker-compose.yml          # Configuração principal
-??? .env                        # Credenciais (NÃO versionado)
-??? .env.example                # Template de configuração
-??? .gitignore                  # Protege .env e dados sensíveis
-??? README.md                   # Esta documentação
-??? OIDC_QUICKSTART.md         # Guia detalhado passo a passo
+â”œâ”€â”€ docker-compose.yml          # ConfiguraÃ§Ã£o principal
+â”œâ”€â”€ .env                        # Credenciais (NÃƒO versionado)
+â”œâ”€â”€ .env.example                # Template de configuraÃ§Ã£o
+â”œâ”€â”€ .gitignore                  # Protege .env e dados sensÃ­veis
+â”œâ”€â”€ README.md                   # Esta documentaÃ§Ã£o
+â””â”€â”€ OIDC_QUICKSTART.md         # Guia detalhado passo a passo
 ```
 
 ---
 
-## Referências
+## ReferÃªncias
 
 - [Grafana Generic OAuth](https://grafana.com/docs/grafana/latest/setup-grafana/configure-security/configure-authentication/generic-oauth/)
 - [Microsoft Entra ID - OAuth 2.0](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow)
@@ -262,31 +262,31 @@ GrafanaOidcSso/
 
 ---
 
-## Próximos Passos
+## PrÃ³ximos Passos
 
-Após configurar o SSO básico:
+ApÃ³s configurar o SSO bÃ¡sico:
 
-1. Configurar HTTPS para produção
+1. Configurar HTTPS para produÃ§Ã£o
 2. Adicionar MFA (via Azure AD Conditional Access)
 3. Configurar backup de dashboards
 4. Integrar com data sources (Prometheus, Loki, etc.)
-5. Implementar rotação automática de secrets
+5. Implementar rotaÃ§Ã£o automÃ¡tica de secrets
 
 ---
 
-## Checklist de Segurança
+## Checklist de SeguranÃ§a
 
-Antes de ir para produção:
+Antes de ir para produÃ§Ã£o:
 
-- [ ] Usar HTTPS com certificado válido
+- [ ] Usar HTTPS com certificado vÃ¡lido
 - [ ] Secrets gerenciados via Azure Key Vault
 - [ ] MFA habilitado no Azure AD
 - [ ] Conditional Access policies configuradas
 - [ ] Auditoria de acesso habilitada
-- [ ] Alertas de expiração de secrets
+- [ ] Alertas de expiraÃ§Ã£o de secrets
 - [ ] Backup regular de dashboards
 - [ ] Logs centralizados configurados
 
 ---
 
-**Dica**: Para produção, sempre use **HTTPS** e **Azure Key Vault** para gerenciar secrets!
+**Dica**: Para produÃ§Ã£o, sempre use **HTTPS** e **Azure Key Vault** para gerenciar secrets!
