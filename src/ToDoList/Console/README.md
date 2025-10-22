@@ -82,7 +82,7 @@ User Secrets is the safest way to store sensitive configuration during developme
 #### Initialize User Secrets
 
 ```bash
-cd ConsoleDaemonApp
+cd src/ToDoList/Console
 dotnet user-secrets init
 ```
 
