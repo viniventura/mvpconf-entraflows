@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # Grafana with OIDC SSO (works with OSS - FREE)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-oidc-sso
+    ports:
+      - "3001:3000"
+    environment:
+      # Basic Configuration
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_SERVER_DOMAIN=localhost
+      
+      # Azure AD / Microsoft Entra via Generic OAuth (OIDC)
+      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
+      - GF_AUTH_GENERIC_OAUTH_NAME=Microsoft Entra
+      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=true
+      - GF_AUTH_GENERIC_OAUTH_AUTO_LOGIN=false
+      - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
+      
+      # OAuth Client Credentials (from .env file)
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
+      
+      # Microsoft Entra OAuth URLs (using TENANT_ID from .env)
+      - GF_AUTH_GENERIC_OAUTH_SCOPES=openid email profile
+      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/authorize
+      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token
+      - GF_AUTH_GENERIC_OAUTH_API_URL=https://graph.microsoft.com/oidc/userinfo
+      
+      # ====================================
+      # AUTHORIZATION CONFIGURATION
+      # ====================================
+      
+      # Option 1: Use App Roles (RECOMMENDED)
+      # Requires: App Roles configured in Azure App Registration
+      # Maps roles claim to Grafana roles (Admin, Editor, Viewer)
+      - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(roles[*], 'Admin') && 'Admin' || contains(roles[*], 'Editor') && 'Editor' || 'Viewer'
+      
+      # Option 2: Use Groups (Alternative)
+      # Uncomment and replace GUIDs with your Azure AD group Object IDs
+      # - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(groups[*], 'GROUP_ID_FOR_ADMINS') && 'Admin' || contains(groups[*], 'GROUP_ID_FOR_EDITORS') && 'Editor' || 'Viewer'
+      
+      # Option 3: Default role for all users (Simplest)
+      # Uncomment to give everyone Viewer role by default
+      # - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT=false
+      # - GF_AUTH_GENERIC_OAUTH_AUTO_ASSIGN_ORG_ROLE=Viewer
+      
+      # Skip organization role sync (use role from token only)
+      - GF_AUTH_GENERIC_OAUTH_SKIP_ORG_ROLE_SYNC=false
+      
+      # Allow users to be assigned to multiple orgs
+      - GF_AUTH_GENERIC_OAUTH_ALLOW_ASSIGN_GRAFANA_ADMIN=false
+      
+      # ====================================
+      # ATTRIBUTE MAPPING
+      # ====================================
+      
+      # Email attribute mapping
+      - GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH=email
+      - GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH=email
+      - GF_AUTH_GENERIC_OAUTH_NAME_ATTRIBUTE_PATH=name
+      
+      # Optional: Map additional user attributes
+      # - GF_AUTH_GENERIC_OAUTH_GROUPS_ATTRIBUTE_PATH=groups
+      
+      # Admin Credentials (fallback for local login)
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      
+      # Disable anonymous access
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      
+      # Optional: Disable local login form (force SSO only)
+      # - GF_AUTH_DISABLE_LOGIN_FORM=false
+      
+      # Logging
+      - GF_LOG_LEVEL=debug
+      - GF_LOG_FILTERS=oauth:debug,oauth.generic_oauth:debug
+    
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  grafana-storage:
+    driver: local
