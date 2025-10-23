@@ -22,7 +22,7 @@ Este arquivo Docker Compose orquestra os três workloads da aplicação ToDoList
 
 ### 2. **SPA** (React Single Page Application)
 - **Porta**: `3000`
-- **Imagem Base**: `node:22.11.0-alpine` (build) + `nginx:alpine` (runtime)
+- **Imagem Base**: `node:22.20.0-alpine` (build) + `nginx:alpine` (runtime)
 - **Função**: Interface web usando MSAL React
 - **Dependência**: Aguarda API estar saudável antes de iniciar
 
@@ -197,15 +197,24 @@ As seguintes variáveis são **obrigatórias** e devem estar no arquivo `Console
 As seguintes variáveis são **opcionais** e devem estar no arquivo `SPA/.env.local` (para desenvolvimento local):
 
 #### React App Configuration
+
+**Para Docker**: As variáveis são passadas como **build arguments** no `docker-compose.yml` e compiladas na imagem durante o build:
+
 - `REACT_APP_TENANT_ID`: ID do tenant (GUID)
-- `REACT_APP_TENANT_SUBDOMAIN`: Subdomain ou tenant ID
+- `REACT_APP_TENANT_SUBDOMAIN`: Subdomain do tenant (ex: `contoso`)
 - `REACT_APP_CLIENT_ID`: ID da aplicação SPA (GUID)
 - `REACT_APP_API_CLIENT_ID`: ID da aplicação API (GUID)
-- `REACT_APP_API_ENDPOINT`: URL do endpoint da API (ex: `http://localhost:5000/api/todolist`)
+- `REACT_APP_API_ENDPOINT`: URL do endpoint da API
+  - **Docker**: `http://localhost:5000/api/todolist`
+  - **Produção**: Ajustar para o domínio real
+- `REACT_APP_REDIRECT_URI`: URI de redirecionamento após login (padrão: `http://localhost:3000`)
 
-**Note**: O SPA no Docker usará a configuração compilada no build. Para desenvolvimento local, use `.env.local`.
+**Para Desenvolvimento Local**: Crie o arquivo `SPA/.env.local` (não versionado) com as mesmas variáveis acima.
 
-**⚠️ IMPORTANTE**: Os arquivos `.env` contêm credenciais sensíveis e **NÃO devem** ser commitados ao Git. Eles já estão incluídos no `.gitignore`.
+**⚠️ IMPORTANTE**: 
+- No Docker, as variáveis React são **compiladas em tempo de build** e não podem ser alteradas após a imagem ser criada
+- Credenciais do SPA (Client ID) não são secrets críticos, mas mantenha o `.env` fora do Git
+- Para mudar configurações React, é necessário fazer **rebuild**: `docker-compose up -d --build spa`
 
 **Localização dos arquivos**:
 - API: `src/ToDoList/API/ToDoListAPI/.env`
