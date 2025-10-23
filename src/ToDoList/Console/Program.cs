@@ -15,11 +15,12 @@ class Program
 
     static async Task Main(string[] args)
     {
-        // Load configuration from appsettings.json and User Secrets
+        // Load configuration from appsettings.json, User Secrets, and Environment Variables
         _configuration = new ConfigurationBuilder()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddUserSecrets(Assembly.GetExecutingAssembly(), optional: true)
+            .AddEnvironmentVariables() // Add support for environment variables (Docker, etc.)
             .Build();
 
         _httpClient = new HttpClient();
@@ -110,6 +111,20 @@ class Program
         var clientId = _configuration["AzureAd:ClientId"];
         var clientSecret = _configuration["AzureAd:ClientSecret"];
         var scopes = _configuration.GetSection("ToDoListApi:Scopes").Get<string[]>();
+
+        // Debug: Print configuration values (mask sensitive data)
+        Console.WriteLine($"[DEBUG] Instance: {instance}");
+        Console.WriteLine($"[DEBUG] TenantId: {tenantId}");
+        Console.WriteLine($"[DEBUG] ClientId: {clientId}");
+        Console.WriteLine($"[DEBUG] ClientSecret: {(string.IsNullOrEmpty(clientSecret) ? "NOT SET" : "***SET***")}");
+        Console.WriteLine($"[DEBUG] Scopes count: {scopes?.Length ?? 0}");
+        if (scopes != null)
+        {
+            for (int i = 0; i < scopes.Length; i++)
+            {
+                Console.WriteLine($"[DEBUG] Scope[{i}]: {scopes[i]}");
+            }
+        }
 
         if (string.IsNullOrEmpty(instance) || string.IsNullOrEmpty(tenantId) ||
             string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) ||

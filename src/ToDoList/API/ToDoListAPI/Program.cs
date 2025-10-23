@@ -10,6 +10,7 @@ using Microsoft.Identity.Web;
 using Microsoft.OpenApi.Models;
 
 using ToDoListAPI.Context;
+using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -172,12 +173,21 @@ else
 }
 
 app.UseCors("default");
-app.UseHttpsRedirection();
+
+// Only use HTTPS redirection in production (not in Docker development)
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Health check endpoint for Docker
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
+   .AllowAnonymous();
 
 app.Run();

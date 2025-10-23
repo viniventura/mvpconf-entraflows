@@ -7,6 +7,11 @@ export const createClaimsTable = (claims) => {
     let claimsObj = {};
     let index = 0;
 
+    // Check if claims is null or undefined
+    if (!claims || typeof claims !== 'object') {
+        return claimsObj;
+    }
+
     Object.keys(claims).forEach((key) => {
         if (typeof claims[key] !== 'string' && typeof claims[key] !== 'number') return;
         switch (key) {

@@ -16,12 +16,14 @@ export const Home = () => {
         <>
             <AuthenticatedTemplate>
                 {
-                    activeAccount ?
+                    activeAccount && activeAccount.idTokenClaims ?
                         <Container>
                             <IdTokenData idTokenClaims={activeAccount.idTokenClaims} />
                         </Container>
                         :
-                        null
+                        <Container>
+                            <p>Loading account information...</p>
+                        </Container>
                 }
             </AuthenticatedTemplate>
         </>

@@ -13,9 +13,11 @@ import { LogLevel } from "@azure/msal-browser";
 export const msalConfig = {
     auth: {
         clientId: process.env.REACT_APP_CLIENT_ID || 'Enter_the_Application_Id_Here', // This is the ONLY mandatory field that you need to supply.
-        authority: `https://login.microsoftonline.com/${process.env.REACT_APP_TENANT_SUBDOMAIN || 'Enter_the_Tenant_Subdomain_Here'}.onmicrosoft.com/`, // Replace the placeholder with your tenant subdomain
-        redirectUri: '/', // You must register this URI on Microsoft Entra admin center/App Registration. Defaults to window.location.origin
-        postLogoutRedirectUri: '/', // Indicates the page to navigate after logout.
+        authority: process.env.REACT_APP_TENANT_SUBDOMAIN 
+            ? `https://login.microsoftonline.com/${process.env.REACT_APP_TENANT_SUBDOMAIN}`
+            : `https://login.microsoftonline.com/Enter_the_Tenant_Subdomain_Here.onmicrosoft.com/`, // Replace the placeholder with your tenant subdomain
+        redirectUri: process.env.REACT_APP_REDIRECT_URI || '/', // You must register this URI on Microsoft Entra admin center/App Registration. Defaults to window.location.origin
+        postLogoutRedirectUri: process.env.REACT_APP_POST_LOGOUT_REDIRECT_URI || '/', // Indicates the page to navigate after logout.
     },
     cache: {
         cacheLocation: 'localStorage', // Configures cache location. "sessionStorage" is more secure, but "localStorage" gives you SSO between tabs.
@@ -58,7 +60,7 @@ export const msalConfig = {
  */
 export const protectedResources = {
     toDoListAPI: {
-        endpoint: 'https://localhost:44351/api/todolist',
+        endpoint: process.env.REACT_APP_API_ENDPOINT || 'http://localhost:5000/api/todolist',
         scopes: {
             read: [`api://${process.env.REACT_APP_API_CLIENT_ID || 'Enter_the_Web_Api_Application_Id_Here'}/ToDoList.Read`],
             write: [`api://${process.env.REACT_APP_API_CLIENT_ID || 'Enter_the_Web_Api_Application_Id_Here'}/ToDoList.ReadWrite`],
