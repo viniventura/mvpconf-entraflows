@@ -17,17 +17,17 @@ graph LR
         Graph["📊 Graph API"]
     end
     
-    SPA -->|"1. Auth Code + PKCE"| EntraID
-    SPA -->|"2. Call API"| API
+    SPA -->|"Auth Code + PKCE"| EntraID
+    SPA -->|"Call API"| API
     
-    Console -->|"1. Client Credentials"| EntraID
-    Console -->|"2. Call API"| API
+    Console -->|"Client Credentials"| EntraID
+    Console -->|"Call API"| API
     
     API -->|"Validate Tokens"| EntraID
     API -->|"OBO Flow"| Graph
     
-    classDef local fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    classDef azure fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef local fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#212121
+    classDef azure fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#212121
     
     class SPA,Console,API local
     class EntraID,Graph azure

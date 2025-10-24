@@ -277,7 +277,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👤 Author
 
-**Vinícius Ventura**  
+**Vinicius Ventura**  
 MVP Conf 2025 Speaker
 
 ---
