@@ -1,0 +1,708 @@
+{
+	"info": {
+		"_postman_id": "todolist-entra-external-id",
+		"name": "ToDoList - Microsoft Entra External ID",
+		"description": "Demonstração dos 3 fluxos de autenticação do ToDoList:\n\n1. **Authorization Code + PKCE** (SPA/Mobile) - ⚠️ Pode falhar no Postman (use React SPA)\n2. **Client Credentials** (Daemon/Worker) - ✅ Funciona perfeitamente no Postman\n3. **On-Behalf-Of (OBO)** (API → Graph) - ✅ Use request 3.0 para obter user token via Swagger\n\n**Recomendação de execução:**\n- Fluxo 2 (2.1 → 2.2 → 2.3): Demonstra app-only access\n- Fluxo 3 (3.0 → 3.1 → 3.2): Demonstra OBO com user context\n\nPara Fluxo 1 completo, use a UI React SPA (http://localhost:3000).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authorization Code + PKCE (SPA Flow)",
+			"item": [
+				{
+					"name": "1.1 Get Authorization Code (with PKCE)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Generate PKCE Code Verifier and Challenge",
+									"function base64URLEncode(str) {",
+									"    return str.toString(CryptoJS.enc.Base64)",
+									"        .replace(/\\+/g, '-')",
+									"        .replace(/\\//g, '_')",
+									"        .replace(/=/g, '');",
+									"}",
+									"",
+									"// Generate random code_verifier (43-128 characters)",
+									"const codeVerifier = base64URLEncode(CryptoJS.lib.WordArray.random(32));",
+									"pm.environment.set('code_verifier', codeVerifier);",
+									"",
+									"// Generate code_challenge = BASE64URL(SHA256(code_verifier))",
+									"const codeChallenge = base64URLEncode(CryptoJS.SHA256(codeVerifier));",
+									"pm.environment.set('code_challenge', codeChallenge);",
+									"",
+									"console.log('🔐 PKCE Generated:');",
+									"console.log('code_verifier:', codeVerifier, '(length:', codeVerifier.length, ')');",
+									"console.log('code_challenge:', codeChallenge, '(length:', codeChallenge.length, ')');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://{{tenant_subdomain}}.ciamlogin.com/{{tenant_id}}/oauth2/v2.0/authorize?client_id={{spa_client_id}}&response_type=code&redirect_uri={{spa_redirect_uri}}&scope={{spa_scopes}}&code_challenge={{code_challenge}}&code_challenge_method=S256&state=12345",
+							"protocol": "https",
+							"host": [
+								"{{tenant_subdomain}}",
+								"ciamlogin",
+								"com"
+							],
+							"path": [
+								"{{tenant_id}}",
+								"oauth2",
+								"v2.0",
+								"authorize"
+							],
+							"query": [
+								{
+									"key": "client_id",
+									"value": "{{spa_client_id}}",
+									"description": "SPA Application (client) ID"
+								},
+								{
+									"key": "response_type",
+									"value": "code",
+									"description": "Authorization Code Flow"
+								},
+								{
+									"key": "redirect_uri",
+									"value": "{{spa_redirect_uri}}",
+									"description": "Must match registered redirect URI"
+								},
+								{
+									"key": "scope",
+									"value": "{{spa_scopes}}",
+									"description": "Delegated permissions (ToDoList.Read, .ReadWrite)"
+								},
+								{
+									"key": "code_challenge",
+									"value": "{{code_challenge}}",
+									"description": "SHA256 hash of code_verifier (PKCE)"
+								},
+								{
+									"key": "code_challenge_method",
+									"value": "S256",
+									"description": "PKCE challenge method"
+								},
+								{
+									"key": "state",
+									"value": "12345",
+									"description": "CSRF protection token"
+								}
+							]
+						},
+						"description": "**Simula o fluxo do React SPA com PKCE**\n\n1. Gera `code_verifier` aleatório (Pre-request Script)\n2. Calcula `code_challenge` = SHA256(code_verifier)\n3. Abre browser para login\n4. Usuário autentica e consente\n5. Redirect com `code` na URL\n\n**⚠️ Public Client**: SPA não tem client_secret, usa PKCE para segurança.\n\n**Após executar**: Copie o `code` da URL de redirect e salve em `spa_authorization_code`."
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 Exchange Code for Access Token (with PKCE)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save tokens from response",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    pm.environment.set('spa_access_token', response.access_token);",
+									"    pm.environment.set('spa_refresh_token', response.refresh_token);",
+									"    pm.environment.set('spa_id_token', response.id_token);",
+									"    ",
+									"    console.log('✅ SPA tokens saved');",
+									"    ",
+									"    // Decode Access Token to show scopes",
+									"    const parts = response.access_token.split('.');",
+									"    const payload = JSON.parse(atob(parts[1]));",
+									"    ",
+									"    console.log('📋 Access Token Claims:');",
+									"    console.log('  - scp (scopes):', payload.scp);",
+									"    console.log('  - aud (audience):', payload.aud);",
+									"    console.log('  - idtyp:', payload.idtyp);",
+									"    console.log('  - exp:', new Date(payload.exp * 1000).toISOString());",
+									"} else {",
+									"    console.error('❌ Token exchange failed');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "client_id",
+									"value": "{{spa_client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "authorization_code",
+									"type": "text"
+								},
+								{
+									"key": "code",
+									"value": "{{spa_authorization_code}}",
+									"type": "text",
+									"description": "From previous request redirect"
+								},
+								{
+									"key": "redirect_uri",
+									"value": "{{spa_redirect_uri}}",
+									"type": "text"
+								},
+								{
+									"key": "code_verifier",
+									"value": "{{code_verifier}}",
+									"type": "text",
+									"description": "PKCE verifier (proves we generated the challenge)"
+								},
+								{
+									"key": "scope",
+									"value": "{{spa_scopes}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{tenant_subdomain}}.ciamlogin.com/{{tenant_id}}/oauth2/v2.0/token",
+							"protocol": "https",
+							"host": [
+								"{{tenant_subdomain}}",
+								"ciamlogin",
+								"com"
+							],
+							"path": [
+								"{{tenant_id}}",
+								"oauth2",
+								"v2.0",
+								"token"
+							]
+						},
+						"description": "**Troca authorization code por tokens usando PKCE**\n\n- Envia `code_verifier` (sem client_secret)\n- Entra ID valida: SHA256(code_verifier) == code_challenge\n- Retorna `access_token` com scopes delegados\n\n**Scopes esperados**: `ToDoList.Read ToDoList.ReadWrite`\n\n**Claim importante**: `idtyp: user` (distingue de app-only tokens)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 Call ToDoList API (User Context)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const todos = pm.response.json();",
+									"    console.log('✅ Retrieved', todos.length, 'todos');",
+									"    console.log('📝 User has access to their own todos');",
+									"} else if (pm.response.code === 401) {",
+									"    console.error('❌ Unauthorized - check token and scopes');",
+									"} else if (pm.response.code === 403) {",
+									"    console.error('❌ Forbidden - missing ToDoList.Read scope');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{spa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_base_url}}/todolist",
+							"host": [
+								"{{api_base_url}}"
+							],
+							"path": [
+								"todolist"
+							]
+						},
+						"description": "**Chama API com token de usuário (delegated permissions)**\n\n- API valida token e extrai `scp` claim\n- Verifica se contém `ToDoList.Read`\n- Retorna todos do usuário autenticado\n\n**Authorization**: `[RequiredScopeOrAppPermission(\"ToDoList.Read\")]`"
+					},
+					"response": []
+				},
+				{
+					"name": "1.4 Create ToDo (User Context)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const todo = pm.response.json();",
+									"    console.log('✅ Created todo:', todo.id);",
+									"    pm.environment.set('created_todo_id', todo.id);",
+									"} else if (pm.response.code === 403) {",
+									"    console.error('❌ Forbidden - missing ToDoList.ReadWrite scope');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{spa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Test from Postman (SPA flow)\",\n  \"status\": false\n}"
+						},
+						"url": {
+							"raw": "{{api_base_url}}/todolist",
+							"host": [
+								"{{api_base_url}}"
+							],
+							"path": [
+								"todolist"
+							]
+						},
+						"description": "**Cria um ToDo com token de usuário**\n\n- Requer scope `ToDoList.ReadWrite`\n- ToDo associado ao usuário autenticado\n\n**Authorization**: `[RequiredScopeOrAppPermission(\"ToDoList.ReadWrite\")]`"
+					},
+					"response": []
+				}
+			],
+			"description": "**Fluxo usado pelo React SPA**\n\n- Public client (sem secret)\n- PKCE para segurança\n- Delegated permissions (user context)\n- Scopes: `ToDoList.Read`, `ToDoList.ReadWrite`"
+		},
+		{
+			"name": "2. Client Credentials (Daemon Flow)",
+			"item": [
+				{
+					"name": "2.1 Get App-Only Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save app-only token",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    ",
+									"    pm.environment.set('daemon_access_token', response.access_token);",
+									"    ",
+									"    console.log('✅ Daemon token saved');",
+									"    ",
+									"    // Decode Access Token",
+									"    const parts = response.access_token.split('.');",
+									"    const payload = JSON.parse(atob(parts[1]));",
+									"    ",
+									"    console.log('📋 App-Only Token Claims:');",
+									"    console.log('  - roles (app permissions):', payload.roles);",
+									"    console.log('  - aud (audience):', payload.aud);",
+									"    console.log('  - idtyp:', payload.idtyp, '← app token');",
+									"    console.log('  - NO scp claim (not user context)');",
+									"    ",
+									"    if (!payload.roles || !payload.roles.includes('ToDoList.Read.All')) {",
+									"        console.warn('⚠️ Missing ToDoList.Read.All role!');",
+									"    }",
+									"} else {",
+									"    console.error('❌ Token request failed');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "client_id",
+									"value": "{{daemon_client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{daemon_client_secret}}",
+									"type": "text"
+								},
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								},
+								{
+									"key": "scope",
+									"value": "{{daemon_scope}}",
+									"type": "text",
+									"description": "api://<api-client-id>/.default"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{tenant_subdomain}}.ciamlogin.com/{{tenant_id}}/oauth2/v2.0/token",
+							"protocol": "https",
+							"host": [
+								"{{tenant_subdomain}}",
+								"ciamlogin",
+								"com"
+							],
+							"path": [
+								"{{tenant_id}}",
+								"oauth2",
+								"v2.0",
+								"token"
+							]
+						},
+						"description": "**Client Credentials Flow - usado pelo Console Worker**\n\n- Confidential client (tem secret)\n- Sem usuário (app-only context)\n- Application permissions: `ToDoList.Read.All`, `ToDoList.ReadWrite.All`\n- Token tem claim `roles` (não `scp`)\n- `idtyp: app` (não `user`)\n\n**Scope**: `api://<api-client-id>/.default` (todas as permissões concedidas)"
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 Call ToDoList API (App Context)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const todos = pm.response.json();",
+									"    console.log('✅ Retrieved', todos.length, 'todos (all users)');",
+									"    console.log('📝 App has access to ALL todos (not filtered by user)');",
+									"} else if (pm.response.code === 403) {",
+									"    console.error('❌ Forbidden - missing ToDoList.Read.All role');",
+									"    console.error('Check: Entra ID → API app → App roles → Grant admin consent');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{daemon_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_base_url}}/todolist",
+							"host": [
+								"{{api_base_url}}"
+							],
+							"path": [
+								"todolist"
+							]
+						},
+						"description": "**Chama API com token de aplicação (app-only)**\n\n- API detecta `idtyp: app` no token\n- Valida claim `roles` (não `scp`)\n- Requer `ToDoList.Read.All` role\n- Retorna TODOS os ToDos (de todos usuários)\n\n**Diferença do user token**: Sem filtro por usuário!"
+					},
+					"response": []
+				},
+				{
+					"name": "2.3 Create ToDo (App Context)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const todo = pm.response.json();",
+									"    console.log('✅ Created todo:', todo.id);",
+									"    console.log('⚠️ This todo is NOT associated with a specific user');",
+									"} else if (pm.response.code === 403) {",
+									"    console.error('❌ Forbidden - missing ToDoList.ReadWrite.All role');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{daemon_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Test from Postman (Daemon flow)\",\n  \"status\": false\n}"
+						},
+						"url": {
+							"raw": "{{api_base_url}}/todolist",
+							"host": [
+								"{{api_base_url}}"
+							],
+							"path": [
+								"todolist"
+							]
+						},
+						"description": "**Cria ToDo com token de aplicação**\n\n- Requer role `ToDoList.ReadWrite.All`\n- ToDo NÃO associado a usuário específico\n\n**Uso real**: Background jobs, migrations, admin tasks"
+					},
+					"response": []
+				}
+			],
+			"description": "**Fluxo usado pelo Console Worker**\n\n- Confidential client (tem secret)\n- Client Credentials flow\n- Application permissions (app-only)\n- Roles: `ToDoList.Read.All`, `ToDoList.ReadWrite.All`\n- Acessa dados de TODOS os usuários"
+		},
+		{
+			"name": "3. On-Behalf-Of (OBO Flow)",
+			"item": [
+				{
+					"name": "3.0 Get User Token (via Swagger Helper)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:5000/swagger",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"swagger"
+							]
+						},
+						"description": "**Helper: Obtenha um user token via Swagger UI**\n\n**Passos:**\n1. Execute este request → abrirá Swagger no browser\n2. Click **Authorize** (cadeado no topo)\n3. Configure:\n   - client_id: {{spa_client_id}}\n   - Marque os scopes: ToDoList.Read, ToDoList.ReadWrite\n   - Click Authorize → Faça login\n4. Abra DevTools (F12) → Console → Execute:\n   ```javascript\n   // Inspeciona sessionStorage para encontrar token\n   for (let i = 0; i < sessionStorage.length; i++) {\n       const key = sessionStorage.key(i);\n       if (key.includes('accesstoken')) {\n           console.log('Token encontrado:', sessionStorage.getItem(key));\n       }\n   }\n   ```\n5. **Copie o access token**\n6. No Postman → Variables → Cole em `spa_access_token`\n7. Execute request **3.1**\n\n**Alternativa:** Use o React SPA (http://localhost:3000) e extraia o token do MSAL cache."
+					},
+					"response": []
+				},
+				{
+					"name": "3.1 Call API with OBO Trigger",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const result = pm.response.json();",
+									"    console.log('✅ OBO flow completed successfully');",
+									"    console.log('📧 User email:', result.userEmail);",
+									"    console.log('👤 User display name:', result.userDisplayName);",
+									"    console.log('');",
+									"    console.log('🔄 Flow executed:');",
+									"    console.log('1. API received user access token (SPA → API)');",
+									"    console.log('2. API exchanged it for Graph token (OBO)');",
+									"    console.log('3. API called Microsoft Graph /me endpoint');",
+									"    console.log('4. Returned user info from Graph');",
+									"} else if (pm.response.code === 401) {",
+									"    console.error('❌ Unauthorized - check SPA token');",
+									"} else if (pm.response.code === 500) {",
+									"    console.error('❌ OBO failed - check API app permissions');",
+									"    console.error('Required: User.Read delegated permission for Graph');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{spa_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{api_base_url}}/todolist/me",
+							"host": [
+								"{{api_base_url}}"
+							],
+							"path": [
+								"todolist",
+								"me"
+							]
+						},
+						"description": "**On-Behalf-Of (OBO) Flow Demonstration**\n\n**Flow:**\n1. SPA envia access token para API\n2. API valida token e extrai user identity\n3. API usa OBO para trocar token por Graph token:\n   ```\n   POST https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token\n   grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer\n   assertion={user_access_token}\n   requested_token_use=on_behalf_of\n   scope=https://graph.microsoft.com/User.Read\n   ```\n4. API chama Microsoft Graph com novo token\n5. API retorna dados do Graph ao SPA\n\n**Requisitos:**\n- API precisa ter permissão delegada `User.Read` para Graph\n- Consent do usuário para API acessar Graph em seu nome\n- User token válido (não app-only)\n\n**Cenário real**: API acessa dados do usuário em serviços downstream (Graph, SharePoint, etc) mantendo o contexto de segurança do usuário."
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 Decode Original Token (User → API)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"console.log('🔍 This is the ORIGINAL token (User → API)');",
+									"console.log('📋 Expected claims:');",
+									"console.log('  - aud: API client ID');",
+									"console.log('  - scp: ToDoList.Read ToDoList.ReadWrite');",
+									"console.log('  - idtyp: user');",
+									"console.log('');",
+									"console.log('❌ This token CANNOT call Microsoft Graph');",
+									"console.log('✅ API will exchange it for a Graph token (OBO)');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://jwt.ms/#access_token={{spa_access_token}}",
+							"protocol": "https",
+							"host": [
+								"jwt",
+								"ms"
+							],
+							"path": [
+								""
+							],
+							"hash": "access_token={{spa_access_token}}"
+						},
+						"description": "**Inspeciona o token original (SPA → API)**\n\n**Claims importantes:**\n- `aud`: API client ID (audience)\n- `scp`: `ToDoList.Read ToDoList.ReadWrite`\n- `idtyp`: `user`\n- `oid`: User object ID\n\n**Limitação**: Este token só funciona para a API ToDoList, não para Graph.\n\n**OBO resolve isso**: API troca por novo token com `aud: https://graph.microsoft.com`"
+					},
+					"response": []
+				}
+			],
+			"description": "**On-Behalf-Of (OBO) Flow**\n\n- API recebe token de usuário\n- API troca por token do Graph (mantendo contexto do usuário)\n- API chama Graph em nome do usuário\n- Cascata de permissões delegadas\n\n**Cenário**: API precisa acessar dados do usuário em serviços downstream"
+		}
+	],
+	"variable": [
+		{
+			"key": "tenant_id",
+			"value": "your-tenant-guid",
+			"type": "string"
+		},
+		{
+			"key": "tenant_subdomain",
+			"value": "your-tenant-subdomain",
+			"type": "string"
+		},
+		{
+			"key": "spa_client_id",
+			"value": "your-spa-client-guid",
+			"type": "string"
+		},
+		{
+			"key": "spa_redirect_uri",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "spa_scopes",
+			"value": "openid profile api://your-api-client-id/ToDoList.Read api://your-api-client-id/ToDoList.ReadWrite",
+			"type": "string"
+		},
+		{
+			"key": "daemon_client_id",
+			"value": "your-daemon-client-guid",
+			"type": "string"
+		},
+		{
+			"key": "daemon_client_secret",
+			"value": "your-daemon-secret-value",
+			"type": "string"
+		},
+		{
+			"key": "daemon_scope",
+			"value": "api://your-api-client-id/.default",
+			"type": "string"
+		},
+		{
+			"key": "api_base_url",
+			"value": "http://localhost:5000/api",
+			"type": "string"
+		},
+		{
+			"key": "code_verifier",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "code_challenge",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "spa_authorization_code",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "spa_access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "spa_refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "spa_id_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "daemon_access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "created_todo_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
