@@ -78,7 +78,7 @@ Preencha com os valores do Microsoft Entra admin center:
 
 ```bash
 cd API/ToDoListAPI
-dotnet user-secrets set "AzureAd:Instance" "https://your-tenant.ciamlogin.com/"
+dotnet user-secrets set "AzureAd:Instance" "hhttps://login.microsoftonline.com/"
 dotnet user-secrets set "AzureAd:TenantId" "your-tenant-id"
 dotnet user-secrets set "AzureAd:ClientId" "your-client-id"
 dotnet user-secrets set "AzureAd:ClientSecret" "your-client-secret"
